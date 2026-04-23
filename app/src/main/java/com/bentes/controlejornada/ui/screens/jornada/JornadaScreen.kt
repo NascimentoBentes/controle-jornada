@@ -11,132 +11,74 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 
+// UI → chama ViewModel
+
 @Composable
-fun JornadaScreen() {
-
-    var trabalhando by remember { mutableStateOf(false) }
-    var pausado by remember { mutableStateOf(false) }
-    var folga by remember { mutableStateOf(false) }
-
+fun JornadaScreen(viewModel: JornadaViewModel = viewModel()) {
+    val state by viewModel.state.collectAsState()
     var horaAtual by remember { mutableStateOf(getHoraAtual()) }
-
-    // Atualiza hora a cada segundo
     LaunchedEffect(Unit) {
         while (true) {
             horaAtual = getHoraAtual()
             delay(1000)
         }
     }
-
-    val statusTexto = when {
-        folga -> "Dia de folga"
-        pausado -> "Em pausa"
-        trabalhando -> "Trabalhando"
+    val statusTexto = when{
+        state.folga -> "Dia de folga"
+        state.pausado ->"Em pausa"
+        state.trabalhando -> "Trabalhando"
         else -> "Parado"
     }
-
-    val statusCor = when {
-        folga -> Color.Gray
-        pausado -> Color(0xFFFFA000)
-        trabalhando -> Color(0xFF4CAF50)
-        else -> Color.Red
-    }
-
-    Column(
+    Column(                                     // Alinhamento geral dos componentes
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = getDataAtual(),
-            style = MaterialTheme.typography.bodyLarge
-        )
-
+    ){                            // Posição dos componentes
+        Text(getDataAtual())
         Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Text(
-                    text = horaAtual,
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = statusTexto,
-                    color = statusCor,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Botão principal
+        Text(
+            text = horaAtual,
+            style = MaterialTheme.typography.headlineLarge
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(statusTexto)
+        Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = {
-                if (!trabalhando) {
-                    trabalhando = true
-                    folga = false
-                } else {
-                    trabalhando = false
-                    pausado = false
-                }
-            },
+            onClick = { viewModel.iniciarOuFinallizarJornada() },
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (trabalhando) "Finalizar Jornada" else "Iniciar Jornada")
+            ) {
+                Text(
+                    if(state.trabalhando)"Finalizar Jornada"
+                    else "Iniciar Jornada"
+                )
         }
-
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Botão pausa
         OutlinedButton(
-            onClick = {
-                if (trabalhando) {
-                    pausado = !pausado
-                }
-            },
+            onClick = {viewModel.alternarPausa()},
             modifier = Modifier.fillMaxWidth(),
-            enabled = trabalhando
+            enabled = state.trabalhando
         ) {
-            Text(if (pausado) "Finalizar Pausa" else "Iniciar Pausa")
+            Text(
+                if (state.pausado) "Finalizar Pausa"
+                else "Iniciar Pausa"
+            )
         }
-
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Botão folga
         OutlinedButton(
-            onClick = {
-                folga = true
-                trabalhando = false
-                pausado = false
-            },
+            onClick = { viewModel.marcarFolga() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Marcar dia de folga")
+            Text("Dia de Folga")
         }
     }
+
 }
 
 // 🔧 Utils simples (depois a gente move pra utils/)
